@@ -26,7 +26,7 @@ namespace Server
         {
             InitializeComponent();
             _trayIcon = new System.Windows.Forms.NotifyIcon();
-            setRedIcon();
+            setStopIcon();
             _trayIcon.Visible = true;
             _trayIcon.DoubleClick += delegate (object sender, EventArgs args)
             {
@@ -48,8 +48,7 @@ namespace Server
                     this.Hide();             
                     ms = new MyServer(Int32.Parse(Port.Text), Username.Text, Password.Password);
                     ms.Window = this;
-                    //      Window = new MainWindow(Username.Text, Password.Text, Int32.Parse(Port.Text));
-                    //      Window.Show();
+                    setPauseIcon();
                     labelstart.Text = "Stop";
                     Port.IsReadOnly = true;
                     Username.IsReadOnly = true;
@@ -59,6 +58,7 @@ namespace Server
                 else {
                     ms.stop();
                     labelstart.Text = "Start";
+                    setStopIcon();
                     Port.IsReadOnly = false;
                     Username.IsReadOnly = false;
                     Password.IsEnabled = true;
@@ -90,9 +90,13 @@ namespace Server
 
         public void ConnectionClosed()
         {
-            setRedIcon();
-            if(!ms.WasStopped())
-            _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Connection closed by Client, accepting new connection!", ToolTipIcon.Info);
+           
+            if(ms != null && !ms.WasStopped())
+            {
+                setPauseIcon();
+                _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Connection Problems, accepting new connection!", ToolTipIcon.Info);
+
+            }
 
         }
 
@@ -101,7 +105,7 @@ namespace Server
             if (ms != null)
                 ms.stop();
 
-            setRedIcon();
+            setStopIcon();
             start.Content = "Start";
             Port.IsReadOnly = false;
             Username.IsReadOnly = false;
@@ -110,16 +114,46 @@ namespace Server
 
         }
 
-        public void setGreenIcon()
+        public void writeIpWindow(String remote, String local)
         {
-            _trayIcon.Icon = new System.Drawing.Icon("Resources/green.ico");
+            remoteip.Text += remote;
+            localip.Text += local;
+
         }
 
-        public void setRedIcon()
+        public void setPlayIcon()
         {
-            _trayIcon.Icon = new System.Drawing.Icon("Resources/red.ico");
+            _trayIcon.Icon = new System.Drawing.Icon("Resources/rec4.ico");
         }
 
+        public void setPauseIcon()
+        {
+            _trayIcon.Icon = new System.Drawing.Icon("Resources/play1normal.ico");
+        }
+
+        public void setStopIcon()
+        {
+            _trayIcon.Icon = new System.Drawing.Icon("Resources/stop2.ico");
+        }
+
+        private void Expander_Collapsed(object sender, RoutedEventArgs e)
+        {
+            Application.Current.MainWindow.Height = Application.Current.MainWindow.Height - 70;
+
+        }
+
+        private void Expander_Expanded(object sender, RoutedEventArgs e)
+        {
+            //         mw.ResizeMode= this.ResizeMode = System.Windows.ResizeMode.CanResize;
+            Application.Current.MainWindow.Height = Application.Current.MainWindow.Height + 70;
+
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            Application.Current.MainWindow = this;
+
+        }
     }
 }
 

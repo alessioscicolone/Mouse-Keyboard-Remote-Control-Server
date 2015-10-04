@@ -1,7 +1,8 @@
 ﻿<Window x:Class="Server.MainWindow"
+        x:Name="mw"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Controllo Remoto - Server" Height="177.05" Width="405.648" Closing="Window_Closing" ResizeMode="NoResize">
+        Title="Controllo Remoto - Server" Loaded="Window_Loaded" Height="209.75" Width="414.648" Closing="Window_Closing" ResizeMode="NoResize">
 
     <Grid>
         <Border>
@@ -12,6 +13,7 @@
                     <GradientStop Color="#259bd1" Offset="0.99"/>
                 </LinearGradientBrush>
             </Border.Background>
+
         </Border>
         <TextBox x:Name="Username" HorizontalAlignment="Left" Height="23" Margin="83,18,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="105"/>
         <Label Foreground="White" Content="Username" HorizontalAlignment="Left" Margin="10,15,0,0" VerticalAlignment="Top"/>
@@ -19,6 +21,24 @@
         <Label Foreground="White" Content="Password" HorizontalAlignment="Left" Margin="10,54,0,0" VerticalAlignment="Top"/>
         <TextBox x:Name="Port" HorizontalAlignment="Left" Height="23" Margin="83,97,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="105"/>
         <Label Foreground="White" Content="Port" HorizontalAlignment="Left" Margin="21,94,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.52,1.823"/>
+
+        <Expander Header="Show Connection Information"
+                  Foreground="white"
+          Collapsed="Expander_Collapsed"
+          Expanded="Expander_Expanded"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Top"
+          IsExpanded="false"
+          DockPanel.Dock="Left"
+          Height="82" Margin="21,136,0,0" Width="200"
+           >
+
+            <StackPanel Orientation="Vertical" Width="200" Height="60">
+                <TextBlock x:Name="remoteip" Foreground="White" Text="Remote Ip Address: " Margin="0,10" Width="198" />
+                <TextBlock x:Name="localip"  Foreground="White" Text="Local Ip Address: "  />
+            </StackPanel>
+        </Expander>
+
 
         <Button x:Name="start" Width="173" Height="60" BorderThickness="0" VerticalAlignment="Top" Foreground="White" HorizontalAlignment="Left" Click="Button_Click" Background="Transparent" FontSize="13" Margin="208,44,0,0" >
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Width="173" Height="60">

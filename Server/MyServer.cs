@@ -33,26 +33,34 @@ namespace Server
 
         public MyServer(int port, string username, string password)
         {
-            exch = new ECDiffieHellmanCng(256);
-            exch.KeyDerivationFunction = ECDiffieHellmanKeyDerivationFunction.Hash;
-            exch.HashAlgorithm = CngAlgorithm.Sha256;
-            publicKey = exch.PublicKey.ToByteArray();
-            this.username = username;
-            this.password = password;
-            input = new Input();
-            mcb = new MyClipBoard();
-            localpt = new IPEndPoint(IPAddress.Any, port);
-            /* Initializes the Listener */
-            myList = new TcpListener(localpt);
-            /* Start Listening at the specified port */
-            myList.Start();
-            Console.WriteLine("The server is running at port 8001...");
-            Console.WriteLine("The local End point is :" + myList.LocalEndpoint);
-            Console.WriteLine("Waiting for a connection.....");
+            try
+            {
+                exch = new ECDiffieHellmanCng(256);
+                exch.KeyDerivationFunction = ECDiffieHellmanKeyDerivationFunction.Hash;
+                exch.HashAlgorithm = CngAlgorithm.Sha256;
+                publicKey = exch.PublicKey.ToByteArray();
+                this.username = username;
+                this.password = password;
+                input = new Input();
+                mcb = new MyClipBoard();
+                localpt = new IPEndPoint(IPAddress.Any, port);
+                /* Initializes the Listener */
+                myList = new TcpListener(localpt);
+                /* Start Listening at the specified port */
+                myList.Start();
+                Console.WriteLine("The server is running at port 8001...");
+                Console.WriteLine("The local End point is :" + myList.LocalEndpoint);
+                Console.WriteLine("Waiting for a connection.....");
 
-            Thread t = new Thread(InputProcessing);
-            t.SetApartmentState(ApartmentState.STA);
-            t.Start();
+                Thread t = new Thread(InputProcessing);
+                t.SetApartmentState(ApartmentState.STA);
+                t.Start();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);             
+            }
+
 
         }
 
@@ -62,6 +70,8 @@ namespace Server
             {
                 s = myList.AcceptSocket();
                 Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
+                s.ReceiveTimeout = Timeout.Infinite;
+                s.LingerState = new LingerOption(true, 0);
 
                 Boolean logged = connectAndLogin();
                 if (logged)
@@ -183,7 +193,8 @@ namespace Server
             {
                 try { 
                 s = myList.AcceptSocket();
-                Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
+                
+                    Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
                 }
                 catch(Exception e)
                 {
@@ -193,11 +204,20 @@ namespace Server
                 Boolean logged = connectAndLogin();
                 if (logged)
                 {
+                    IPEndPoint remoteIpEndPoint = s.RemoteEndPoint as IPEndPoint;
+                    IPEndPoint localIpEndPoint = s.LocalEndPoint as IPEndPoint;
                     Thread t1 = new Thread(mcb.InitializeShare);
                     t1.Start();
                     Thread t2 = new Thread(mcb.AddConnection);
-                    t2.Start((s.RemoteEndPoint as IPEndPoint).Address.ToString());
+                    t2.Start((remoteIpEndPoint).Address.ToString());
 
+                    if (remoteIpEndPoint != null && localIpEndPoint != null )
+                    {
+                        Window.Dispatcher.Invoke(new Action(() =>
+                        {
+                            Window.writeIpWindow(remoteIpEndPoint.Address.ToString(), localIpEndPoint.Address.ToString());
+                        }));
+                    }
                     while (true)
                     {
                         byte[] b = new byte[4];
@@ -240,7 +260,7 @@ namespace Server
                                     }
                                     Window.Dispatcher.Invoke(new Action(() =>
                                       {
-                                          Window.setRedIcon();
+                                          Window.setPauseIcon();
                                       }));
                                     break;
 
@@ -271,7 +291,7 @@ namespace Server
                                                 mcb.SetClipboard(
                                                     ((IPEndPoint)s.RemoteEndPoint).Address
                                                         .ToString(), obj);
-                                                Window.setGreenIcon();
+                                                Window.setPlayIcon();
                                             }));
                                         }
                                     }
@@ -305,7 +325,8 @@ namespace Server
             }
         }
 
-        
+
+
 
         public void stop()
         {
@@ -314,6 +335,7 @@ namespace Server
                 accepting = false;
                 Thread t = new Thread(mcb.DeleteShare);
                 t.Start();
+                if(s != null)
                 s.Close();
                 myList.Stop();
                 myList = null;
