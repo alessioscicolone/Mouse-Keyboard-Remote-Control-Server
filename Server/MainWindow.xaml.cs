@@ -93,6 +93,7 @@ namespace Server
            
             if(ms != null && !ms.WasStopped())
             {
+                resetIpWindow(true);
                 setPauseIcon();
                 _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Connection Problems, accepting new connection!", ToolTipIcon.Info);
 
@@ -114,9 +115,25 @@ namespace Server
 
         }
 
+        public void resetIpWindow(Boolean onlyRemote)
+        {
+            if (onlyRemote)
+                remoteip.Text = "Remote Ip Address: ";
+
+            else {
+                remoteip.Text = "Remote Ip Address: ";
+                localip.Text = "Local Ip Address: ";
+
+            }
+
+        }
+
         public void writeIpWindow(String remote, String local)
         {
+            if(remote != null)
             remoteip.Text += remote;
+
+            if(local != null)
             localip.Text += local;
 
         }
@@ -144,7 +161,6 @@ namespace Server
 
         private void Expander_Expanded(object sender, RoutedEventArgs e)
         {
-            //         mw.ResizeMode= this.ResizeMode = System.Windows.ResizeMode.CanResize;
             Application.Current.MainWindow.Height = Application.Current.MainWindow.Height + 70;
 
         }

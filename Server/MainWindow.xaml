@@ -22,7 +22,7 @@
         <TextBox x:Name="Port" HorizontalAlignment="Left" Height="23" Margin="83,97,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="105"/>
         <Label Foreground="White" Content="Port" HorizontalAlignment="Left" Margin="21,94,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.52,1.823"/>
 
-        <Expander Header="Show Connection Information"
+        <Expander Header="Show Connection Informations"
                   Foreground="white"
           Collapsed="Expander_Collapsed"
           Expanded="Expander_Expanded"

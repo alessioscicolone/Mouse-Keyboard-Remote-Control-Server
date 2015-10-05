@@ -174,6 +174,19 @@ namespace Server
 
         }
 
+        public static string GetLocalIPAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("Local IP Address Not Found!");
+        }
+
         private bool SocketConnected(Socket s)
         {
             if (s != null)
@@ -189,10 +202,14 @@ namespace Server
         }
         public void InputProcessing()
         {
+            Window.Dispatcher.Invoke(new Action(() =>
+            {
+                Window.writeIpWindow(null, GetLocalIPAddress());
+            }));
             while (accepting)
             {
-                try { 
-                s = myList.AcceptSocket();
+                try {                                                            
+                    s = myList.AcceptSocket();
                 
                     Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
                 }
@@ -215,7 +232,7 @@ namespace Server
                     {
                         Window.Dispatcher.Invoke(new Action(() =>
                         {
-                            Window.writeIpWindow(remoteIpEndPoint.Address.ToString(), localIpEndPoint.Address.ToString());
+                            Window.writeIpWindow(remoteIpEndPoint.Address.ToString(),null);
                         }));
                     }
                     while (true)
@@ -335,7 +352,12 @@ namespace Server
                 accepting = false;
                 Thread t = new Thread(mcb.DeleteShare);
                 t.Start();
-                if(s != null)
+
+                Window.Dispatcher.Invoke(new Action(() =>
+                {
+                    Window.resetIpWindow(false);
+                }));
+                if (s != null)
                 s.Close();
                 myList.Stop();
                 myList = null;
