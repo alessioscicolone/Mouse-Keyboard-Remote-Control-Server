@@ -140,7 +140,7 @@ namespace Server
         public void event_Switch_Mouse(byte[] b1)//uint caseSwitch, POINT p, int rotation)
         {
             MouseStruct mystruct = mfromBytes(b1);
-            POINT p = normalizatonPoint(mystruct.mhs.pt);
+            POINT p = mystruct.mhs.pt;
             int rotation = mystruct.mhs.mouseData;
             switch ((uint)mystruct.me)
             {
