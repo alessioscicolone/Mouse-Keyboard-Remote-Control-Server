@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,6 +11,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
@@ -25,6 +28,10 @@ namespace Server
         public MainWindow()
         {
             InitializeComponent();
+           startImage.Source = Imaging.CreateBitmapSourceFromHBitmap(Server.Properties.Resources.start2.GetHbitmap(),
+                                  IntPtr.Zero,
+                                  Int32Rect.Empty,
+                                  BitmapSizeOptions.FromEmptyOptions()); 
             _trayIcon = new System.Windows.Forms.NotifyIcon();
             setStopIcon();
             _trayIcon.Visible = true;
@@ -45,10 +52,16 @@ namespace Server
             {
                 if (labelstart.Text.Equals("Start"))
                 {
-                    this.Hide();             
-                    ms = new MyServer(Int32.Parse(Port.Text), Username.Text, Password.Password);
-                    ms.Window = this;
-                    setPauseIcon();
+                    this.Hide();
+                    try { 
+                    ms = new MyServer(Int32.Parse(Port.Text), Username.Text, Password.Password,this);
+                    }
+                    catch(SocketException se)
+                    {
+                        PortAlreadyInUse();
+                        return;
+                    }
+                    setPlayIcon();
                     labelstart.Text = "Stop";
                     Port.IsReadOnly = true;
                     Username.IsReadOnly = true;
@@ -94,7 +107,7 @@ namespace Server
             if(ms != null && !ms.WasStopped())
             {
                 resetIpWindow(true);
-                setPauseIcon();
+                setPlayIcon();
                 _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Connection Problems, accepting new connection!", ToolTipIcon.Info);
 
             }
@@ -113,6 +126,21 @@ namespace Server
             Password.IsEnabled = true;
             _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Error: Connection Problems", ToolTipIcon.Info);
 
+        }
+
+        public void PortAlreadyInUse()
+        {
+            Dispatcher.Invoke(new Action(() =>
+            {
+                System.Windows.Forms.MessageBox.Show("La porta scelta è già in uso", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                
+                labelstart.Text = "Start";
+                setStopIcon();
+                Port.IsReadOnly = false;
+                Username.IsReadOnly = false;
+                Password.IsEnabled = true;
+                _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "The server is now stopped", ToolTipIcon.Info);
+            }));
         }
 
         public void resetIpWindow(Boolean onlyRemote)
@@ -138,19 +166,19 @@ namespace Server
 
         }
 
-        public void setPlayIcon()
+        public void setRecIcon()
         {
-            _trayIcon.Icon = new System.Drawing.Icon("Resources/rec4.ico");
+            _trayIcon.Icon = Server.Properties.Resources.rec4;
         }
 
-        public void setPauseIcon()
+        public void setPlayIcon()
         {
-            _trayIcon.Icon = new System.Drawing.Icon("Resources/play1normal.ico");
+            _trayIcon.Icon = Server.Properties.Resources.play1normal;
         }
 
         public void setStopIcon()
         {
-            _trayIcon.Icon = new System.Drawing.Icon("Resources/stop2.ico");
+            _trayIcon.Icon = Server.Properties.Resources.stop2;
         }
 
         private void Expander_Collapsed(object sender, RoutedEventArgs e)
@@ -168,8 +196,8 @@ namespace Server
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             Application.Current.MainWindow = this;
-
         }
+
     }
 }
 

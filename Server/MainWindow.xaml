@@ -15,11 +15,11 @@
             </Border.Background>
 
         </Border>
-        <TextBox x:Name="Username" HorizontalAlignment="Left" Height="23" Margin="83,18,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="105"/>
+        <TextBox x:Name="Username" MaxLength="25" HorizontalAlignment="Left" Height="23" Margin="83,18,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="105"/>
         <Label Foreground="White" Content="Username" HorizontalAlignment="Left" Margin="10,15,0,0" VerticalAlignment="Top"/>
-        <PasswordBox x:Name="Password" HorizontalAlignment="Left" Height="23" Margin="83,57,0,0" VerticalAlignment="Top" Width="105"/>
+        <PasswordBox x:Name="Password" MaxLength="50" HorizontalAlignment="Left" Height="23" Margin="83,57,0,0" VerticalAlignment="Top" Width="105"/>
         <Label Foreground="White" Content="Password" HorizontalAlignment="Left" Margin="10,54,0,0" VerticalAlignment="Top"/>
-        <TextBox x:Name="Port" HorizontalAlignment="Left" Height="23" Margin="83,97,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="105"/>
+        <TextBox x:Name="Port" MaxLength="5" HorizontalAlignment="Left" Height="23" Margin="83,97,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="105"/>
         <Label Foreground="White" Content="Port" HorizontalAlignment="Left" Margin="21,94,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.52,1.823"/>
 
         <Expander Header="Show Connection Informations"
@@ -42,7 +42,7 @@
 
         <Button x:Name="start" Width="173" Height="60" BorderThickness="0" VerticalAlignment="Top" Foreground="White" HorizontalAlignment="Left" Click="Button_Click" Background="Transparent" FontSize="13" Margin="208,44,0,0" >
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Width="173" Height="60">
-                <Image Source="start2.png" Width="40" Height="40" Margin="10,10,20,10" RenderOptions.BitmapScalingMode="NearestNeighbor"
+                <Image x:Name="startImage" Width="40" Height="40" Margin="10,10,20,10" RenderOptions.BitmapScalingMode="NearestNeighbor"
             		RenderOptions.EdgeMode="Aliased"/>
                 <TextBlock x:Name="labelstart" Foreground="White" FontSize="20" Text="Start" Margin="0,13,0,10"/>
             </StackPanel>
