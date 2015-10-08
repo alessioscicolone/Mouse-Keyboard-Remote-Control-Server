@@ -458,17 +458,30 @@ namespace Server
                 
 
                 if(s!= null && myList != null)
-                 s.Close();
-                myList.Stop();
+                {
+                    s.Close();
+                    myList.Stop();
+                }
+
+                if(sClip != null && myListClip != null)
+                {
+                    sClip.Close();
+                    myListClip.Stop();
+                }
+                 
 
                 myList = null;
                 s = null;
+                sClip = null;
+                myListClip = null;
             }
 
             catch (Exception e)
             {
                 myList = null;
                 s = null;
+                sClip = null;
+                myListClip = null;
                 Console.WriteLine(e.Message);
             }
 
