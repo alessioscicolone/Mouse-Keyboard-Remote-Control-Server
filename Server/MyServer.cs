@@ -170,6 +170,7 @@ namespace Server
 
         private bool SocketConnected(Socket s)
         {
+            try { 
             if (s != null)
             {
                 bool part1 = s.Poll(1000, SelectMode.SelectRead);
@@ -180,6 +181,11 @@ namespace Server
                     return true;
             }
             else return false;
+            }
+            catch(Exception e)
+            {
+                return false;
+            }
         }
 
 

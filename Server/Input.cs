@@ -308,20 +308,6 @@ namespace Server
         }
 
 
-        //**************************Normalization***************************
-        POINT normalizatonPoint(POINT p)
-        {
-            Double w = System.Windows.SystemParameters.PrimaryScreenWidth;
-            Double h = System.Windows.SystemParameters.PrimaryScreenHeight;
-
-            p.x = (uint)((p.x / w) * 65535);
-            p.y = (uint)((p.y / h) * 65535);
-
-
-
-            return p;
-        }
-
         public void event_Switch_Keyboard(byte[] b1)//uint caseSwitch, int key)
         {
             KeyboardStruct mystruct = kfromBytes(b1);
