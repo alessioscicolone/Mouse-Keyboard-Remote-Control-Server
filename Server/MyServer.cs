@@ -193,8 +193,11 @@ namespace Server
         {          
                 try
                 {
-                    sClip = myListClip.AcceptSocket();
-                    byte[] b = new byte[4];
+                sClip = myListClip.AcceptSocket();
+                sClip.LingerState = new LingerOption(true, 0);
+                sClip.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+              
+                byte[] b = new byte[4];
                     int key = sClip.Receive(b, 4, SocketFlags.None);
                     Console.WriteLine("Clipboard Connection accepted from " + sClip.RemoteEndPoint);
                 }
@@ -302,6 +305,7 @@ namespace Server
             }
         public void InputProcessing()
         {
+           
             Window.Dispatcher.Invoke(new Action(() =>
             {
                 Window.writeIpWindow(null, GetLocalIPAddress());
@@ -310,7 +314,8 @@ namespace Server
             {
                 try {                                                            
                     s = myList.AcceptSocket();
-                
+                    s.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    s.LingerState = new LingerOption(true, 0);
                     Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
                 }
                 catch(Exception e)
@@ -340,14 +345,17 @@ namespace Server
                     }
                     while (true)
                     {
-                        byte[] b = new byte[4];
+                        byte[] b = new byte[32];
                         byte[] b1 = new byte[28];
                         byte[] b2 = new byte[24];
+                        MemoryStream messageStream = new MemoryStream();
+                        int key = 0;
                         try
                         {
                             if (SocketConnected(s))
                             {
-                                int key = s.Receive(b, 4, SocketFlags.None);
+                                key = s.Receive(b, 32, SocketFlags.None);
+                                messageStream.Write(b, sizeof(Int32), 28);                             
                             }
                             else
                             {
@@ -362,12 +370,13 @@ namespace Server
                             switch (Convert.ToInt32(b[0]))
                             {
                                 case 0:
-                                    s.Receive(b1, 28, SocketFlags.None);
-                                    input.event_Switch_Mouse(b1);
+                      //              s.Receive(b1, 28, SocketFlags.None);
+                                    input.event_Switch_Mouse(messageStream.GetBuffer()); //era b1
                                     break;
                                 case 1:
-                                    s.Receive(b2, 24, SocketFlags.None);
-                                    input.event_Switch_Keyboard(b2);
+                     //               s.Receive(b2, 24, SocketFlags.None);
+                                    input.event_Switch_Keyboard(messageStream.GetBuffer());
+                                    messageStream.Position = 0;
                                     break;
                   /*              case 2:
                                     Console.WriteLine("send clipboard to client");
@@ -445,9 +454,6 @@ namespace Server
             }
         }
 
-
-
-
         public void stop()
         {
             try
@@ -461,20 +467,27 @@ namespace Server
                     Window.resetIpWindow(false);
                 }));
 
+                              
+                if(s!= null) 
+                {
+                    s.Shutdown(SocketShutdown.Both);
+                    s.Close();
+        
+                }
+                if (myList != null)
+                    myList.Stop();
                 
 
-                if(s!= null && myList != null)
+                if(sClip != null)
                 {
-                    s.Close();
-                    myList.Stop();
+                    sClip.Shutdown(SocketShutdown.Both);
+                    sClip.Close();
+                   
                 }
 
-                if(sClip != null && myListClip != null)
-                {
-                    sClip.Close();
+                if(myListClip != null)
                     myListClip.Stop();
-                }
-                 
+
 
                 myList = null;
                 s = null;
