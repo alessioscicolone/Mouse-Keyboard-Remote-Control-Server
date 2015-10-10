@@ -106,10 +106,12 @@ namespace Server
            
             if(ms != null && !ms.WasStopped())
             {
-                resetIpWindow(true);
+                Dispatcher.Invoke(new Action(() =>
+                {
+                    resetIpWindow(true);
                 setPlayIcon();
                 _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Connection Problems, accepting new connection!", ToolTipIcon.Info);
-
+                }));
             }
 
         }
@@ -119,13 +121,16 @@ namespace Server
             if (ms != null)
                 ms.stop();
 
+            Dispatcher.Invoke(new Action(() =>
+            {
+
             setStopIcon();
             start.Content = "Start";
             Port.IsReadOnly = false;
             Username.IsReadOnly = false;
             Password.IsEnabled = true;
             _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Error: Connection Problems", ToolTipIcon.Info);
-
+            }));
         }
 
         public void PortAlreadyInUse()
@@ -145,7 +150,9 @@ namespace Server
 
         public void resetIpWindow(Boolean onlyRemote)
         {
-            if (onlyRemote)
+            Dispatcher.Invoke(new Action(() =>
+            {
+                if (onlyRemote)
                 remoteip.Text = "Remote Ip Address: ";
 
             else {
@@ -153,32 +160,45 @@ namespace Server
                 localip.Text = "Local Ip Address: ";
 
             }
+            }));
 
         }
 
         public void writeIpWindow(String remote, String local)
         {
-            if(remote != null)
+            Dispatcher.Invoke(new Action(() =>
+            {
+                if (remote != null)
             remoteip.Text += remote;
 
             if(local != null)
             localip.Text += local;
 
+            }));
         }
 
         public void setRecIcon()
         {
-            _trayIcon.Icon = Server.Properties.Resources.rec4;
+            Dispatcher.Invoke(new Action(() =>
+            {
+                _trayIcon.Icon = Server.Properties.Resources.rec4;
+            }));
         }
 
         public void setPlayIcon()
         {
-            _trayIcon.Icon = Server.Properties.Resources.play1normal;
+            Dispatcher.Invoke(new Action(() =>
+            {
+                _trayIcon.Icon = Server.Properties.Resources.play1normal;
+            }));
         }
 
         public void setStopIcon()
         {
-            _trayIcon.Icon = Server.Properties.Resources.stop2;
+            Dispatcher.Invoke(new Action(() =>
+            {
+                _trayIcon.Icon = Server.Properties.Resources.stop2;
+            }));
         }
 
         private void Expander_Collapsed(object sender, RoutedEventArgs e)

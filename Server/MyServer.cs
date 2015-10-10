@@ -18,11 +18,10 @@ namespace Server
     {
         private Input input;
         private TcpListener myList;
-        private TcpListener myListClip;
-        private Socket s;
-        private Socket sClip;
+        private TcpClient tclient;
+        private UdpClient uclient;
+ //       private Socket s;
         private IPEndPoint localpt;
-        private IPEndPoint localptClip;
         private MyClipBoard mcb;
         public MainWindow Window { get; set; }
 
@@ -48,19 +47,19 @@ namespace Server
                 input = new Input();
                 mcb = new MyClipBoard();
                 localpt = new IPEndPoint(IPAddress.Any, port);
-                localptClip = new IPEndPoint(IPAddress.Any, port+1);
-                Console.WriteLine(port + " dio " + (port +1));
                 /* Initializes the Listener */
-                myList = new TcpListener(localpt);
-                myListClip = new TcpListener(localptClip);
+                myList = new TcpListener(localpt);              
+                uclient = new UdpClient();
+                uclient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                uclient.DontFragment = true;
+                uclient.Client.Bind(localpt);
                 /* Start Listening at the specified port */
                 myList.Start();
-                myListClip.Start();
                 Console.WriteLine("The server is running at port 8001...");
                 Console.WriteLine("The local End point is :" + myList.LocalEndpoint);
                 Console.WriteLine("Waiting for a connection.....");
 
-                Thread t = new Thread(InputProcessing);
+                Thread t = new Thread(ClipBoardProcessing);
                 t.SetApartmentState(ApartmentState.STA);
                 t.Start();
             }
@@ -100,11 +99,13 @@ namespace Server
             {
                 byte[] clientPublicKey = new byte[72];
 
-                int k = s.Receive(clientPublicKey, 72, SocketFlags.None);
+       //         int k = s.Receive(clientPublicKey, 72, SocketFlags.None);
+                tclient.GetStream().Read(clientPublicKey, 0, 72);
                 byte[] derivedKey =
                 exch.DeriveKeyMaterial(CngKey.Import(clientPublicKey, CngKeyBlobFormat.EccPublicBlob));
-                s.Send(publicKey, publicKey.Length, SocketFlags.None);
-                StreamReader streamReader = new StreamReader(new NetworkStream(s));
+       //         s.Send(publicKey, publicKey.Length, SocketFlags.None);
+                tclient.GetStream().Write(publicKey, 0, publicKey.Length);
+                StreamReader streamReader = new StreamReader(tclient.GetStream());
 
                 string currentUserName = this.username;
 
@@ -144,7 +145,8 @@ namespace Server
                 Console.WriteLine("Logged: " + logged);
 
                 byte[] auth = BitConverter.GetBytes(logged);
-                s.Send(auth, sizeof(bool), SocketFlags.None);
+                //        s.Send(auth, sizeof(bool), SocketFlags.None);
+                tclient.GetStream().Write(auth, 0, sizeof(bool));
                 return logged;
             }
             catch (Exception e)
@@ -182,192 +184,237 @@ namespace Server
             }
             else return false;
             }
-            catch(Exception e)
+            catch(SocketException se)
             {
+                Console.WriteLine("socketconnectedfunc2"+se.ErrorCode);
+                return false;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("socketConnectedFunc "+e.Message);
                 return false;
             }
         }
 
 
         public void ClipBoardProcessing()
-        {          
+        {
+       //     Window.Dispatcher.Invoke(new Action(() =>
+       //     {
+                Window.writeIpWindow(null, GetLocalIPAddress());
+       //     }));
+            while (accepting)
+            {
                 try
                 {
-                sClip = myListClip.AcceptSocket();
-                sClip.LingerState = new LingerOption(true, 0);
-                sClip.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-              
-                byte[] b = new byte[4];
-                    int key = sClip.Receive(b, 4, SocketFlags.None);
-                    Console.WriteLine("Clipboard Connection accepted from " + sClip.RemoteEndPoint);
+
+                    tclient = myList.AcceptTcpClient();
+                    tclient.GetStream().ReadTimeout = Timeout.Infinite;
+                    tclient.Client.LingerState = new LingerOption(true, 0);
+                    SetTcpKeepAlive(tclient.Client, 3000, 1);
+
+
+                    //           s = myList.AcceptSocket();
+                    //           s.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    //           s.LingerState = new LingerOption(true, 0);
+                    //           Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
                 }
                 catch (Exception e)
                 {
-                    stop();
-                    return;
-                }
-
-                while (accepting)
-                {
-                    byte[] b = new byte[4];
-                    try
-                    {
-                        if (SocketConnected(sClip))
-                        {
-                            int key = sClip.Receive(b, 4, SocketFlags.None);
-                        }
-                        else
-                        {
-                            Window.Dispatcher.Invoke(new Action(() =>
-                            {
-                                Window.ConnectionClosed();
-                            }));
-                            break;
-
-                        }
-                        switch (Convert.ToInt32(b[0]))
-                        {
-
-                            case 2:
-                                Console.WriteLine("send clipboard to client");
-                                byte[] clip = mcb.GetClipboardData();
-                                byte[] len = BitConverter.GetBytes(clip != null ? clip.Length : 0);
-                                sClip.Send(len, sizeof(int), SocketFlags.None);
-                                if (clip != null)
-                                {
-                                    sClip.Send(clip, clip.Length, SocketFlags.None);
-                                }
-                                Window.Dispatcher.Invoke(new Action(() =>
-                                {
-                                    Window.setPlayIcon();
-                                }));
-                                break;
-
-                            case 3:
-                                Console.WriteLine("get clipboard from client");
-
-                                byte[] recClipLen = new byte[sizeof(int)];
-                                sClip.Receive(recClipLen, sizeof(int), SocketFlags.None);
-                                int recLen = BitConverter.ToInt32(recClipLen, 0);
-                                if (recLen > 0)
-                                {
-                                    int read = 0;
-                                    byte[] recClip = new byte[recLen];
-                                    while (read < recLen)
-                                    {
-                                        read += sClip.Receive(recClip, read, recLen - read, SocketFlags.None);
-                                    }
-
-                                    using (var memStream = new MemoryStream())
-                                    {
-                                        var binForm = new BinaryFormatter();
-                                        memStream.Write(recClip, 0, recClip.Length);
-                                        memStream.Seek(0, SeekOrigin.Begin);
-                                        var obj = binForm.Deserialize(memStream);
-
-                                        Window.Dispatcher.Invoke(new Action(() =>
-                                        {
-                                            mcb.SetClipboard(
-                                                ((IPEndPoint)s.RemoteEndPoint).Address
-                                                    .ToString(), obj);
-                                            Window.setRecIcon();
-                                        }));
-                                    }
-                                }
-
-
-                                break;
-
-
-                        }
-                    }
-                    catch (Exception se)
-                    {
-                        if (!SocketConnected(sClip))
-                        {
-                            Window.Dispatcher.Invoke(new Action(() =>
-                            {
-                                Window.ConnectionClosed();
-                            }));
-
-                        }
-
-                        Console.WriteLine("Error " + se.Message);
-                        break;
-                    }
-
-
-                }
-
-
-                
-
-            }
-        public void InputProcessing()
-        {
-           
-            Window.Dispatcher.Invoke(new Action(() =>
-            {
-                Window.writeIpWindow(null, GetLocalIPAddress());
-            }));
-            while (accepting)
-            {
-                try {                                                            
-                    s = myList.AcceptSocket();
-                    s.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                    s.LingerState = new LingerOption(true, 0);
-                    Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
-                }
-                catch(Exception e)
-                {
+                    Console.WriteLine("clipBoardProcfunc "+e.Message);
                     stop();
                     break;
                 }
                 Boolean logged = connectAndLogin();
                 if (logged)
                 {
-                    IPEndPoint remoteIpEndPoint = s.RemoteEndPoint as IPEndPoint;
-                    IPEndPoint localIpEndPoint = s.LocalEndPoint as IPEndPoint;
+                    IPEndPoint remoteIpEndPoint = tclient.Client.RemoteEndPoint as IPEndPoint;
+                    IPEndPoint localIpEndPoint = tclient.Client.LocalEndPoint as IPEndPoint;
                     Thread t1 = new Thread(mcb.InitializeShare);
                     t1.Start();
                     Thread t2 = new Thread(mcb.AddConnection);
                     t2.Start((remoteIpEndPoint).Address.ToString());
-                    Thread t3 = new Thread(ClipBoardProcessing);
-                    t3.SetApartmentState(ApartmentState.STA);
+                    Thread t3 = new Thread(InputProcessing);
                     t3.Start();
 
-                    if (remoteIpEndPoint != null && localIpEndPoint != null )
+                    if (remoteIpEndPoint != null && localIpEndPoint != null)
                     {
-                        Window.Dispatcher.Invoke(new Action(() =>
-                        {
-                            Window.writeIpWindow(remoteIpEndPoint.Address.ToString(),null);
-                        }));
+           //             Window.Dispatcher.Invoke(new Action(() =>
+            //            {
+                            Window.writeIpWindow(remoteIpEndPoint.Address.ToString(), null);
+            //            }));
                     }
+
+       //             try
+       //             {
+                        //       sClip = myListClip.AcceptSocket();
+                        //      sClip.LingerState = new LingerOption(true, 0);
+                        //      sClip.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+     //                   byte[] b = new byte[4];
+                        //      int key = s.Receive(b, 4, SocketFlags.None);
+     //                   tclient.GetStream().Read(b, 0, 4);
+                 //       Console.WriteLine("Clipboard Connection accepted from " + s.RemoteEndPoint);
+  //                  }
+   /*                 catch (Exception e)
+                    {
+                        Console.WriteLine("clipfunclogged"+ e.Message);
+                        stop();
+                        return;
+                    } */
+
                     while (true)
                     {
+                        byte[] b = new byte[4];
+                        try
+                        {
+                            if (tclient!=null && SocketConnected(tclient.Client))
+                            {
+                                //    int key = s.Receive(b, 4, SocketFlags.None);
+                                tclient.GetStream().Read(b, 0, 4);
+                            }
+                            else
+                            {
+             //                   Window.Dispatcher.Invoke(new Action(() =>
+             //                   {
+                                    Window.ConnectionClosed();
+             //                   }));
+                                break;
+
+                            }
+                            switch (Convert.ToInt32(b[0]))
+                            {
+
+                                case 2:
+                                    Console.WriteLine("send clipboard to client");
+                                    byte[] clip = mcb.GetClipboardData();
+                                    byte[] len = BitConverter.GetBytes(clip != null ? clip.Length : 0);
+                                    //       s.Send(len, sizeof(int), SocketFlags.None);
+                                    tclient.GetStream().Write(len, 0, sizeof(int));
+                                    if (clip != null)
+                                    {
+                                        //          s.Send(clip, clip.Length, SocketFlags.None);
+                                        tclient.GetStream().Write(clip, 0, clip.Length);
+                                    }
+             //                       Window.Dispatcher.Invoke(new Action(() =>
+             //                       {
+                                        Window.setPlayIcon();
+             //                       }));
+                                    break;
+
+                                case 3:
+                                    Console.WriteLine("get clipboard from client");
+
+                                    byte[] recClipLen = new byte[sizeof(int)];
+                                    //          s.Receive(recClipLen, sizeof(int), SocketFlags.None);
+                                    tclient.GetStream().Read(recClipLen, 0, sizeof(int));
+                                    int recLen = BitConverter.ToInt32(recClipLen, 0);
+                                    if (recLen > 0)
+                                    {
+                                        int read = 0;
+                                        byte[] recClip = new byte[recLen];
+                                        while (read < recLen)
+                                        {
+                                      //     read += s.Receive(recClip, read, recLen - read, SocketFlags.None);
+                                            read += tclient.GetStream().Read(recClip, read, recLen - read);
+                                        }
+
+                                        using (var memStream = new MemoryStream())
+                                        {
+                                            var binForm = new BinaryFormatter();
+                                            memStream.Write(recClip, 0, recClip.Length);
+                                            memStream.Seek(0, SeekOrigin.Begin);
+                                            var obj = binForm.Deserialize(memStream);
+                                            Window.setRecIcon();
+                                            Window.Dispatcher.Invoke(new Action(() =>
+                                            {
+                                                mcb.SetClipboard(
+                                                    ((IPEndPoint)tclient.Client.RemoteEndPoint).Address
+                                                        .ToString(), obj);
+                                               
+                                            }));
+                                        }
+                                    }
+
+
+                                    break;
+
+
+                            }
+                        }
+                        catch (SocketException se)
+                        {
+                            
+                     //           Window.Dispatcher.Invoke(new Action(() =>
+                     //           {
+                                    Window.ConnectionClosed();
+                     //           }));
+
+                            
+
+                            Console.WriteLine("Error cristo " + se.ErrorCode);
+                            break;
+                        }
+                        catch(IOException ie)
+                        {
+                            //                Window.Dispatcher.Invoke(new Action(() =>
+                            //                {
+                            Window.ConnectionClosed();
+                            //                }));
+                            Console.WriteLine("IOex " + ie.Message);
+                        }
+                        catch(Exception e)
+                        {
+         //                   Window.Dispatcher.Invoke(new Action(() =>
+         //                   {
+                                Window.ConnectionClosed();
+         //                   }));
+
+                            Console.WriteLine("Error clipboardproc " + e.Message);
+                            break;
+
+                        }
+
+
+                    }
+
+                }
+            }
+                
+
+            }
+        public void InputProcessing()
+        {
+            IPEndPoint ip = new IPEndPoint(IPAddress.Any, 0);
+            while (true)
+                    {
+                        byte[] data;
                         byte[] b = new byte[32];
                         byte[] b1 = new byte[28];
                         byte[] b2 = new byte[24];
                         MemoryStream messageStream = new MemoryStream();
-                        int key = 0;
+      //                  int key = 0;
+                        
                         try
                         {
-                            if (SocketConnected(s))
-                            {
-                                key = s.Receive(b, 32, SocketFlags.None);
-                                messageStream.Write(b, sizeof(Int32), 28);                             
-                            }
-                            else
-                            {
-                                Window.Dispatcher.Invoke(new Action(() =>
-                                {
-                                    Window.ConnectionClosed();
-                                }));
-                                break;
+                            data = uclient.Receive(ref ip);
+                            messageStream.Write(data, sizeof(Int32), 28);
+                            //         if (SocketConnected(s))
+                            //         {
+                            //             key = s.Receive(b, 32, SocketFlags.None);
+                            //             messageStream.Write(b, sizeof(Int32), 28);                             
+                            //         }
+                            /*         else
+                                     {
+                                         Window.Dispatcher.Invoke(new Action(() =>
+                                         {
+                                             Window.ConnectionClosed();
+                                         }));
+                                         break;
 
-                            }
+                                     } */
 
-                            switch (Convert.ToInt32(b[0]))
+                            switch (Convert.ToInt32(data[0]))
                             {
                                 case 0:
                       //              s.Receive(b1, 28, SocketFlags.None);
@@ -376,7 +423,7 @@ namespace Server
                                 case 1:
                      //               s.Receive(b2, 24, SocketFlags.None);
                                     input.event_Switch_Keyboard(messageStream.GetBuffer());
-                                    messageStream.Position = 0;
+                                    
                                     break;
                   /*              case 2:
                                     Console.WriteLine("send clipboard to client");
@@ -435,23 +482,43 @@ namespace Server
 
                         catch (Exception se)
                         {
-                            if (!SocketConnected(s))
-                            {
-                                Window.Dispatcher.Invoke(new Action(() =>
-                                {
-                                    Window.ConnectionClosed();
-                                }));
-                                
-                            }
                            
-                            Console.WriteLine("Error " + se.Message);
+               //                 Window.Dispatcher.Invoke(new Action(() =>
+               //                 {
+                                    Window.ConnectionClosed();
+               //                 }));                              
+                           
+                           
+                            Console.WriteLine("Error inputprocessing " + se.Message);
                             break;
                         }
 
 
                     }
-                }
-            }
+                
+            
+        }
+
+
+        private static void SetTcpKeepAlive(Socket socket, uint keepaliveTime, uint keepaliveInterval)
+        {
+            /* the native structure
+            struct tcp_keepalive {
+            ULONG onoff;
+            ULONG keepalivetime;
+            ULONG keepaliveinterval;
+            };
+            */
+
+            // marshal the equivalent of the native structure into a byte array
+            uint dummy = 0;
+            byte[] inOptionValues = new byte[Marshal.SizeOf(dummy) * 3];
+            BitConverter.GetBytes((uint)(keepaliveTime)).CopyTo(inOptionValues, 0);
+            BitConverter.GetBytes((uint)keepaliveTime).CopyTo(inOptionValues, Marshal.SizeOf(dummy));
+            BitConverter.GetBytes((uint)keepaliveInterval).CopyTo(inOptionValues, Marshal.SizeOf(dummy) * 2);
+
+            // write SIO_VALS to Socket IOControl
+            socket.IOControl(IOControlCode.KeepAliveValues, inOptionValues, null);
         }
 
         public void stop()
@@ -461,47 +528,58 @@ namespace Server
                 accepting = false;
                 Thread t = new Thread(mcb.DeleteShare);
                 t.Start();
-
-                Window.Dispatcher.Invoke(new Action(() =>
-                {
+       //         Window.Dispatcher.Invoke(new Action(() =>
+       //         {
                     Window.resetIpWindow(false);
-                }));
-
-                              
-                if(s!= null) 
-                {
-                    s.Shutdown(SocketShutdown.Both);
-                    s.Close();
-        
-                }
+       //         }));
                 if (myList != null)
                     myList.Stop();
-                
 
-                if(sClip != null)
+                if (tclient!= null) 
                 {
-                    sClip.Shutdown(SocketShutdown.Both);
-                    sClip.Close();
-                   
+                    //        s.Send(new byte[1]);
+                    tclient.Client.Send(new byte[1]);
+                    //       s.Shutdown(SocketShutdown.Both);
+                    //       s.Close();
+                    tclient.Client.Shutdown(SocketShutdown.Receive);
+                    tclient.Client.Close();
+                    tclient.GetStream().Dispose();
+                    tclient.Close();
+        
                 }
 
-                if(myListClip != null)
-                    myListClip.Stop();
+               
 
 
+                if (uclient != null)
+                    uclient.Close();
+                /*         if(sClip != null)
+                         {
+                             sClip.Shutdown(SocketShutdown.Both);
+                             sClip.Close();
+
+                         }
+
+                         if(myListClip != null)
+                             myListClip.Stop(); */
+
+                uclient = null;
                 myList = null;
-                s = null;
-                sClip = null;
-                myListClip = null;
+                tclient = null;
+     //           s = null;
+     //           sClip = null;
+     //           myListClip = null;
             }
 
             catch (Exception e)
             {
                 myList = null;
-                s = null;
-                sClip = null;
-                myListClip = null;
-                Console.WriteLine(e.Message);
+                // s = null;
+                tclient = null;
+                uclient = null;
+     //           sClip = null;
+     //           myListClip = null;
+                Console.WriteLine("stopfunc "+e.Message);
             }
 
         }
