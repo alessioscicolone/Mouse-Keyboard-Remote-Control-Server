@@ -59,11 +59,12 @@ namespace Server
                 Console.WriteLine("The local End point is :" + myList.LocalEndpoint);
                 Console.WriteLine("Waiting for a connection.....");
 
+                Thread t3 = new Thread(InputProcessing);
+                t3.Start();
                 Thread t = new Thread(ClipBoardProcessing);
                 t.SetApartmentState(ApartmentState.STA);
                 t.Start();
-                Thread t3 = new Thread(InputProcessing);
-                t3.Start();
+                
             }
             catch (SocketException se)
             {
@@ -77,6 +78,12 @@ namespace Server
             {
                 Console.WriteLine(e.Message);             
             }
+
+
+        }
+
+        public void connect()
+        {
 
 
         }
@@ -311,30 +318,23 @@ namespace Server
                         catch (SocketException se)
                         {
                             
-                     //           Window.Dispatcher.Invoke(new Action(() =>
-                     //           {
-                                    Window.ConnectionClosed();
-                     //           }));
-
-                            
+                    
+                                    Window.ConnectionClosed();                            
 
                             Console.WriteLine("Error cristo " + se.ErrorCode);
                             break;
                         }
                         catch(IOException ie)
                         {
-                            //                Window.Dispatcher.Invoke(new Action(() =>
-                            //                {
+                            
                             Window.ConnectionClosed();
-                            //                }));
                             Console.WriteLine("IOex " + ie.Message);
+                            return;
                         }
                         catch(Exception e)
                         {
-         //                   Window.Dispatcher.Invoke(new Action(() =>
-         //                   {
+        
                                 Window.ConnectionClosed();
-         //                   }));
 
                             Console.WriteLine("Error clipboardproc " + e.Message);
                             break;
@@ -351,17 +351,21 @@ namespace Server
             }
         public void InputProcessing()
         {
+            
             IPEndPoint ip = new IPEndPoint(IPAddress.Any, 0);
             while (true)
                     {
-                        byte[] data;
+               
+                byte[] data;
                        
                         MemoryStream messageStream = new MemoryStream();
                         
                         try
                         {
-                            data = uclient.Receive(ref ip);
-                            messageStream.Write(data, sizeof(Int32), 28);                                                             
+                    
+                    data = uclient.Receive(ref ip);
+             
+                    messageStream.Write(data, sizeof(Int32), 28);                                                             
 
                             switch (Convert.ToInt32(data[0]))
                             {
@@ -395,7 +399,7 @@ namespace Server
 
 
                     }
-            Console.WriteLine("INPUT PROCESSING MORTO");
+           
                 
             
         }
@@ -445,7 +449,6 @@ namespace Server
                                                     
                     tclient.Client.Shutdown(SocketShutdown.Receive);
                     tclient.Client.Close();
-                    tclient.GetStream().Dispose();
                     tclient.Close();
         
                 }
