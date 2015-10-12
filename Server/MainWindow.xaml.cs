@@ -24,14 +24,13 @@ namespace Server
 
         private System.Windows.Forms.NotifyIcon _trayIcon;
         private MyServer ms;
-        //public static PrincipalContext pc = new PrincipalContext(ContextType.Machine, null);
         public MainWindow()
         {
             InitializeComponent();
-           startImage.Source = Imaging.CreateBitmapSourceFromHBitmap(Server.Properties.Resources.start2.GetHbitmap(),
-                                  IntPtr.Zero,
-                                  Int32Rect.Empty,
-                                  BitmapSizeOptions.FromEmptyOptions()); 
+            startImage.Source = Imaging.CreateBitmapSourceFromHBitmap(Server.Properties.Resources.start2.GetHbitmap(),
+                                   IntPtr.Zero,
+                                   Int32Rect.Empty,
+                                   BitmapSizeOptions.FromEmptyOptions());
             _trayIcon = new System.Windows.Forms.NotifyIcon();
             setStopIcon();
             _trayIcon.Visible = true;
@@ -48,15 +47,16 @@ namespace Server
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (this.Port.Text.All(Char.IsDigit) && !String.IsNullOrEmpty(Port.Text) && !String.IsNullOrEmpty(Username.Text) && !String.IsNullOrEmpty(Password.Password))
+            if (this.Port.Text.All(Char.IsDigit) && Int32.Parse(Port.Text) <= 65535 && !String.IsNullOrEmpty(Port.Text) && !String.IsNullOrEmpty(Username.Text) && !String.IsNullOrEmpty(Password.Password))
             {
                 if (labelstart.Text.Equals("Start"))
                 {
                     this.Hide();
-                    try { 
-                    ms = new MyServer(Int32.Parse(Port.Text), Username.Text, Password.Password,this);
+                    try
+                    {
+                        ms = new MyServer(Int32.Parse(Port.Text), Username.Text, Password.Password, this);
                     }
-                    catch(SocketException se)
+                    catch (SocketException se)
                     {
                         PortAlreadyInUse();
                         return;
@@ -68,7 +68,8 @@ namespace Server
                     Password.IsEnabled = false;
                     _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "The server now accepts connections", ToolTipIcon.Info);
                 }
-                else {
+                else
+                {
                     ms.stop();
                     labelstart.Text = "Start";
                     setStopIcon();
@@ -83,34 +84,35 @@ namespace Server
             else
             {
                 System.Windows.Forms.MessageBox.Show("Assicurati di aver inserito tutti i campi", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                
+
                 labelstart.Text = "Start";
                 Port.IsReadOnly = false;
-               
+
             }
         }
 
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            
-            if(ms != null)
+
+            if (ms != null)
                 ms.stop();
 
-                _trayIcon.Visible = false;
-                Application.Current.Shutdown();
-            
+            _trayIcon.Visible = false;
+            Application.Current.Shutdown();
+
         }
 
         public void ConnectionClosed()
         {
-           
-            if(ms != null && !ms.WasStopped())
+
+            if (ms != null && !ms.WasStopped())
             {
                 Dispatcher.Invoke(new Action(() =>
                 {
                     resetIpWindow(true);
-                setPlayIcon();
-                _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Connection Problems, accepting new connection!", ToolTipIcon.Info);
+                    setPlayIcon();
+                    _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Connection Problems, accepting new connection!", ToolTipIcon.Info);
                 }));
             }
 
@@ -124,12 +126,12 @@ namespace Server
             Dispatcher.Invoke(new Action(() =>
             {
 
-            setStopIcon();
-            start.Content = "Start";
-            Port.IsReadOnly = false;
-            Username.IsReadOnly = false;
-            Password.IsEnabled = true;
-            _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Error: Connection Problems", ToolTipIcon.Info);
+                setStopIcon();
+                start.Content = "Start";
+                Port.IsReadOnly = false;
+                Username.IsReadOnly = false;
+                Password.IsEnabled = true;
+                _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Error: Connection Problems", ToolTipIcon.Info);
             }));
         }
 
@@ -138,7 +140,7 @@ namespace Server
             Dispatcher.Invoke(new Action(() =>
             {
                 System.Windows.Forms.MessageBox.Show("La porta scelta è già in uso", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                
+
                 labelstart.Text = "Start";
                 setStopIcon();
                 Port.IsReadOnly = false;
@@ -153,13 +155,14 @@ namespace Server
             Dispatcher.Invoke(new Action(() =>
             {
                 if (onlyRemote)
-                remoteip.Text = "Remote Ip Address: ";
+                    remoteip.Text = "Remote Ip Address: ";
 
-            else {
-                remoteip.Text = "Remote Ip Address: ";
-                localip.Text = "Local Ip Address: ";
+                else
+                {
+                    remoteip.Text = "Remote Ip Address: ";
+                    localip.Text = "Local Ip Address: ";
 
-            }
+                }
             }));
 
         }
@@ -169,10 +172,10 @@ namespace Server
             Dispatcher.Invoke(new Action(() =>
             {
                 if (remote != null)
-            remoteip.Text += remote;
+                    remoteip.Text += remote;
 
-            if(local != null)
-            localip.Text += local;
+                if (local != null)
+                    localip.Text += local;
 
             }));
         }
@@ -223,9 +226,9 @@ namespace Server
 
 
 
-        
 
-       
 
-       
-   
+
+
+
+

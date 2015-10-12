@@ -137,7 +137,7 @@ namespace Server
             return mystruct;
         }
 
-        public void event_Switch_Mouse(byte[] b1)//uint caseSwitch, POINT p, int rotation)
+        public void event_Switch_Mouse(byte[] b1)
         {
             MouseStruct mystruct = mfromBytes(b1);
             POINT p = mystruct.mhs.pt;
@@ -308,7 +308,7 @@ namespace Server
         }
 
 
-        public void event_Switch_Keyboard(byte[] b1)//uint caseSwitch, int key)
+        public void event_Switch_Keyboard(byte[] b1)
         {
             KeyboardStruct mystruct = kfromBytes(b1);
             int key = mystruct.kb.vkCode;
