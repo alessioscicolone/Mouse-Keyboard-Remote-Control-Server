@@ -227,6 +227,8 @@ namespace Server
                         Window.writeIpWindow(remoteIpEndPoint.Address.ToString(), null);
                     }
 
+                    Window.setPlayIcon();
+
                     while (true)
                     {
                         byte[] b = new byte[4];

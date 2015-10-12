@@ -61,7 +61,7 @@ namespace Server
                         PortAlreadyInUse();
                         return;
                     }
-                    setPlayIcon();
+                    setPauseIcon();
                     labelstart.Text = "Stop";
                     Port.IsReadOnly = true;
                     Username.IsReadOnly = true;
@@ -201,6 +201,14 @@ namespace Server
             Dispatcher.Invoke(new Action(() =>
             {
                 _trayIcon.Icon = Server.Properties.Resources.stop2;
+            }));
+        }
+
+        public void setPauseIcon()
+        {
+            Dispatcher.Invoke(new Action(() =>
+            {
+                _trayIcon.Icon = Server.Properties.Resources.pauseicon;
             }));
         }
 
