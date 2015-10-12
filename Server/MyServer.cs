@@ -142,7 +142,17 @@ namespace Server
 
                 byte[] auth = BitConverter.GetBytes(logged);
                 tclient.GetStream().Write(auth, 0, sizeof(bool));
+                Console.WriteLine("INVIO RISPOSTA "+ logged);
                 return logged;
+            }
+            catch(CryptographicException ce)
+            {
+                byte[] auth = BitConverter.GetBytes(false);
+                if(tclient != null)
+                tclient.GetStream().Write(auth, 0, sizeof(bool));
+
+                Console.WriteLine("crype ex: " + ce.Message);
+                return false;
             }
             catch (Exception e)
             {
@@ -416,6 +426,15 @@ namespace Server
                 if (tclient != null)
                     tclient.Client.Send(new byte[1]);
 
+                
+            }
+
+            catch (Exception e)
+            {
+                Console.WriteLine("stopfunc " + e.Message);
+            }
+            finally
+            {
                 if (myList != null)
                     myList.Stop();
 
@@ -435,15 +454,6 @@ namespace Server
                 uclient = null;
                 myList = null;
                 tclient = null;
-            }
-
-            catch (Exception e)
-            {
-                myList = null;
-                tclient = null;
-                uclient = null;
-
-                Console.WriteLine("stopfunc " + e.Message);
             }
 
         }
