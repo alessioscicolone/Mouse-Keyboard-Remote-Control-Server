@@ -111,7 +111,7 @@ namespace Server
                 Dispatcher.Invoke(new Action(() =>
                 {
                     resetIpWindow(true);
-                    setPlayIcon();
+                    setPauseIcon();
                     _trayIcon.ShowBalloonTip(500, "Controllo Remoto", "Connection Problems, accepting new connection!", ToolTipIcon.Info);
                 }));
             }
