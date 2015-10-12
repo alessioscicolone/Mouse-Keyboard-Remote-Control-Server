@@ -60,7 +60,7 @@ namespace Server
 
                 Thread t3 = new Thread(InputProcessing);
                 t3.Start();
-                Thread t = new Thread(ClipBoardProcessing);
+                Thread t = new Thread(ClipBoardProcessing); //LOGIN AND CLIPBOARD PROCESSING
                 t.SetApartmentState(ApartmentState.STA);
                 t.Start();
 
@@ -350,7 +350,7 @@ namespace Server
                     switch (Convert.ToInt32(data[0]))
                     {
                         case 0:
-                            input.event_Switch_Mouse(messageStream.GetBuffer()); //era b1
+                            input.event_Switch_Mouse(messageStream.GetBuffer());
                             break;
                         case 1:
                             input.event_Switch_Keyboard(messageStream.GetBuffer());
