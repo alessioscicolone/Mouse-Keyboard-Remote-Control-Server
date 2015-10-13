@@ -150,7 +150,6 @@ namespace Server
                 byte[] auth = BitConverter.GetBytes(false);
                 if(tclient != null)
                 tclient.GetStream().Write(auth, 0, sizeof(bool));
-
                 Console.WriteLine("crype ex: " + ce.Message);
                 return false;
             }
@@ -423,24 +422,20 @@ namespace Server
 
                 Window.resetIpWindow(false);
 
+                try { 
                 if (tclient != null)
                     tclient.Client.Send(new byte[1]);
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
 
-                
-            }
-
-            catch (Exception e)
-            {
-                Console.WriteLine("stopfunc " + e.Message);
-            }
-            finally
-            {
                 if (myList != null)
                     myList.Stop();
 
                 if (tclient != null)
                 {
-
                     tclient.Client.Shutdown(SocketShutdown.Receive);
                     tclient.Client.Close();
                     tclient.Close();
@@ -454,6 +449,15 @@ namespace Server
                 uclient = null;
                 myList = null;
                 tclient = null;
+            }
+
+            catch (Exception e)
+            {
+                myList = null;
+                tclient = null;
+                uclient = null;
+
+                Console.WriteLine("stopfunc " + e.Message);
             }
 
         }
